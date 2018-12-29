@@ -1,152 +1,70 @@
-let movies;
-
-fetch("movies.json").then(function(response) {
-  if (response.ok) {
-    response.json().then(function(response) {
-      movies = response.results;
-      console.log(movies);
-      initialize();
-    });
-  } else {
-    console.log(
-      "Network request for movies.json failed with response " +
-        response.status +
-        ": " +
-        response.statusText
-    );
-  }
-});
-
-function initialize() {
-  let main = document.querySelector("main");
-
-  let finalGroup;
-
-  finalGroup = [];
-  finalGroup = movies;
-  updateDisplay();
-
-  function updateDisplay() {
-    for (let i = 0; i < finalGroup.length; i++) {
-      fetchBlob(finalGroup[i]);
-    }
-  }
-
-  function fetchBlob(movie) {
+var parentTag = document.getElementById("movieBibliotek");
+fetch("movies.json")
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(json) {
     const posterCommonPath = "http://image.tmdb.org/t/p/w300";
-    let url = posterCommonPath + movie.poster_path;
+    let arr = new Array();
+    for (var i = 0; i < json.results.length; i++) {
+      arr[i] = json.results[i].id;
+      var listItem = document.createElement("div");
+      listItem.setAttribute("class", "muvieBlock");
+      var url = posterCommonPath + json.results[i].poster_path;
+      listItem.innerHTML = "<h2>" + json.results[i].title + "</h2>";
+      listItem.innerHTML +=
+        '<div class="checkBoxStyle"><label><input class="check" type="checkbox" id="' +
+        json.results[i].id +
+        '"><span class="label-text">click here to view later</span></label></div>';
+        listItem.innerHTML +=
+        '<div class="averageBlock">' +
+        "★" +
+        json.results[i].vote_average +
+        "</div>";
+        listItem.innerHTML +='<div class="yearMovie">'+json.results[i].original_title +'</div>';
+            listItem.innerHTML += '<div class="imageBlock"><img src=' + url + '></div>';
+      listItem.innerHTML +=
+        '<div class="overviewBlock">' + json.results[i].overview + "</div>";
+      
+      parentTag.appendChild(listItem);
+    }
+    console.log(arr);
 
-    fetch(url).then(function(response) {
-      if (response.ok) {
-        response.blob().then(function(blob) {
-          let objectURL = URL.createObjectURL(blob);
-
-          showmovie(objectURL, movie);
-        });
+    function storageSupport() {
+      if (typeof Storage != "undefined") {
+        console.log("web storage is supported");
+        getData();
+        isClicked();
       } else {
-        console.log(
-          'Network request for "' +
-            movie.name +
-            '" image failed with response ' +
-            response.status +
-            ": " +
-            response.statusText
-        );
+        alert("Sorry your broweser do not support web storage.");
       }
-    });
-  }
+    }
 
-  function showmovie(objectURL, movie) {
-    let section = document.createElement("section");
-    let heading = document.createElement("h3");
-    let imgBox = document.createElement("div");
-    let para = document.createElement("div");
-    let averageAndChek = document.createElement("div");
-    let chekAndLabel = document.createElement("label");
-    let image = document.createElement("img");
-    let average = document.createElement("p");
-    let chek = document.createElement("input");
-    let label = document.createElement("span");
-
-    para.setAttribute("class", "overview");
-    imgBox.setAttribute("class", "imgBox");
-    chek.setAttribute("type", "checkbox");
-    averageAndChek.setAttribute("class", "averageChek");
-    chekAndLabel.setAttribute("class","checkBoxStyle");
-
-    para.textContent = movie.overview;
-    heading.textContent = movie.title;
-    average.textContent = movie.vote_average;
-    label.innerHTML = "Look later";
-    
-    image.src = objectURL;
-    image.alt = movie.name;
-    
-    main.appendChild(section);
-    section.appendChild(imgBox);
-    imgBox.appendChild(image);
-    section.appendChild(heading);
-    section.appendChild(averageAndChek);
-    averageAndChek.appendChild(average);
-    averageAndChek.appendChild(chekAndLabel);
-    chekAndLabel.appendChild(chek);
-    chekAndLabel.appendChild(label);
-
-    section.appendChild(para);
-
-    window.onload = function() {
-      let nameForId;
-      for (let i = 0; i < finalGroup.length; i++) {
-        nameForId = "chekBox" + i;
-        document.getElementsByTagName("input")[i].setAttribute("id", nameForId);
+    function isClicked() {
+      for (let i = 0; i < arr.length; i++) {
+        let idChekBox = document.getElementById(arr[i]);
+        idChekBox.onclick = (function(j) {
+          return function() {
+            this.checked ? setData(arr[j]) : removeData(arr[j]);
+          };
+        })(i);
       }
+    }
 
-      let storage = {
-        itemLength: document
-          .getElementById("myTest")
-          .getElementsByTagName("section").length,
-        init: function() {
-          this.checkStorageComp();
-        },
-        checkStorageComp: function() {
-          if (typeof Storage != "undefined") {
-            console.log("web storage is supported");
-            storage.readStorage();
-            storage.detectCheckboxClick();
-          } else {            
-            alert("Sorry your broweser do not support web storage.");
-          }
-        },
-        detectCheckboxClick: function() {
-          let inputEle = document.getElementsByTagName("input");
-          for (let i = 0; i < inputEle.length; i++) {
-            let t = document.getElementById("chekBox" + i);
-            t.onclick = (function(j) {
-              return function() {
-                this.checked
-                  ? storage.setStorage("chekBox" + j)
-                  : storage.removeStorage("chekBox" + j);
-              };
-            })(i);
-          }
-        },
-        setStorage: function(ele) {
-          localStorage.setItem(ele, "true");
-        },
-        removeStorage: function(ele) {
-          localStorage.removeItem(ele);
-        },
-        readStorage: function() {
-          for (let i = 0; i < this.itemLength; i++) {
-            let c = document.getElementById("chekBox" + i);
-            localStorage.getItem("chekBox" + i)
-              ? (c.checked = true)
-              : (c.checked = false);
-          }
-        }
-      };
+    function setData(ele) {
+      localStorage.setItem(ele, "true");
+    }
 
-      storage.init();
-    };
-  }
-}
+    function removeData(ele) {
+      localStorage.removeItem(ele);
+    }
+
+    function getData() {
+      for (let i = 0; i < arr.length; i++) {
+        let c = document.getElementById(arr[i]);
+        localStorage.getItem(arr[i]) ? (c.checked = true) : (c.checked = false);
+      }
+    }
+
+    storageSupport();
+  });
